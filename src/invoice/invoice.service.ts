@@ -1,24 +1,33 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class InvoiceService {
     constructor(private prisma: PrismaService) { }
 
-    getInvoices(userId: number) {
-        return this.prisma.invoice.findMany({
+    async getInvoices(userId: number) {
+        return await this.prisma.invoice.findMany({
             where: {
                 userId
             }
         });
     }
 
-    getInvoiceById(userId: number, invoiceId: number) {
-        return this.prisma.invoice.findFirst({
+    async getInvoiceById(userId: number, invoiceId: number) {
+        const invoice = await this.prisma.invoice.findFirstOrThrow({
             where: {
                 id: invoiceId,
                 userId
             }
         });
+
+        if (!invoice) {
+            throw new NotFoundException({
+                message: "No invoices with matching id"
+            });
+        }
+
+        return invoice;
     }
 }
