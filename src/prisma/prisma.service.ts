@@ -9,7 +9,8 @@ export class PrismaService extends PrismaClient {
                 db: {
                     url: process.env.DATABASE_URL
                 }
-            }
+            },
+            log: ['error', 'info', 'query', 'warn']
         })
     }
 }
