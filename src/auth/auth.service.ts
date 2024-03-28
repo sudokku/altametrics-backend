@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { AuthDto } from './dto';
+import { AuthDto, RegisterDto } from './dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
@@ -27,7 +27,11 @@ export class AuthService {
             });
 
             if (await bcrypt.compare(dto.password, user.password)) {
-                return this.authToken(user.id, user.email);
+                delete user.password;
+                return {
+                    user,
+                    token: await this.authToken(user.id, user.email)
+                };
             }
 
             throw new ForbiddenException('Incorect credentials');
@@ -39,18 +43,23 @@ export class AuthService {
         }
     }
 
-    async register(dto: AuthDto) {
+    async register(dto: RegisterDto) {
         const hash = await this.hashData(dto.password);
 
         try {
             const newUser = await this.prisma.user.create({
                 data: {
                     email: dto.email,
+                    name: dto.name,
                     password: hash
                 }
             });
 
-            return this.authToken(newUser.id, newUser.email);
+            delete newUser.password;
+            return {
+                user: newUser,
+                token: await this.authToken(newUser.id, newUser.email)
+            };
         } catch (err) {
             if (err instanceof PrismaClientKnownRequestError && err.code === 'P2002') {
                 throw new ForbiddenException('Email in use');
@@ -59,7 +68,7 @@ export class AuthService {
         }
     }
 
-    async authToken(userId: number, email: string): Promise<{ access_token: string }> {
+    async authToken(userId: number, email: string): Promise<string> {
         const payload = {
             sub: userId,
             email
@@ -73,6 +82,6 @@ export class AuthService {
             }
         );
 
-        return { access_token: token };
+        return token;
     }
 }
