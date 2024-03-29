@@ -4,7 +4,7 @@ import { InvoiceService } from './invoice.service';
 import { User } from 'src/auth/decorator';
 
 @UseGuards(JwtGuard)
-@Controller('invoice')
+@Controller('invoices')
 export class InvoiceController {
     constructor(private invoiceService: InvoiceService) { }
 
